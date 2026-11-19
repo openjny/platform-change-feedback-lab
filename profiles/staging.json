@@ -1,0 +1,6 @@
+{
+  "name": "stage-platform",
+  "environment": "tst",
+  "region": "westeurope",
+  "replicas": 2
+}
