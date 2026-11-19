@@ -1,0 +1,54 @@
+name: PR Feedback
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: pr-feedback-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  analyze:
+    if: >-
+      github.event.pull_request.merged &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.sender.login == github.repository_owner
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+      models: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      proposal: ${{ steps.analysis.outputs.proposal }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+      - id: analysis
+        run: python3 -B scripts/feedback.py analyze-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+  publish:
+    needs: analyze
+    if: needs.analyze.outputs.proposal != ''
+    permissions:
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+      - run: python3 -B scripts/feedback.py publish-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROPOSAL: ${{ needs.analyze.outputs.proposal }}

@@ -1,0 +1,6 @@
+{
+  "name": "dev-platform",
+  "environment": "dev",
+  "region": "westeurope",
+  "replicas": 1
+}
